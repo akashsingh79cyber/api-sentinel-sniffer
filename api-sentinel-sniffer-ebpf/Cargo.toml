@@ -1,0 +1,17 @@
+[package]
+name = "api-sentinel-sniffer-ebpf"
+version = "0.1.0"
+edition.workspace = true
+
+[dependencies]
+api-sentinel-sniffer-common = { path = "../api-sentinel-sniffer-common" }
+
+aya-ebpf = { workspace = true }
+aya-log-ebpf = { workspace = true }
+
+[build-dependencies]
+which = { workspace = true }
+
+[[bin]]
+name = "api-sentinel-sniffer"
+path = "src/main.rs"
