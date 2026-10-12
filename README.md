@@ -54,3 +54,10 @@ dual licensed as above, without any additional terms or conditions.
 [Apache license]: LICENSE-APACHE
 [MIT license]: LICENSE-MIT
 [GNU General Public License, Version 2]: LICENSE-GPL2
+
+## Day 2
+- Mock Python HTTP server (port 8080)
+- eBPF tracepoint on sys_enter_sendto (bpftrace PoC: poc/http_sniffer.bt)
+- HTTP method filter (GET/POST/PUT/DELETE/PATCH)
+- Output: [pid comm] METHOD /path
+- Rust/Aya port in progress (toolchain LLVM mismatch being fixed)
