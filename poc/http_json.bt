@@ -1,0 +1,9 @@
+tracepoint:syscalls:sys_enter_sendto
+{
+    $b = str(args->buff);
+    if (strncmp($b, "GET ", 4) == 0 || strncmp($b, "POST", 4) == 0 ||
+        strncmp($b, "PUT ", 4) == 0 || strncmp($b, "DELE", 4) == 0 ||
+        strncmp($b, "PATC", 4) == 0) {
+        printf("%d|%s|%s", pid, comm, $b);
+    }
+}

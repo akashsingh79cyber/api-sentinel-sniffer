@@ -61,3 +61,9 @@ dual licensed as above, without any additional terms or conditions.
 - HTTP method filter (GET/POST/PUT/DELETE/PATCH)
 - Output: [pid comm] METHOD /path
 - Rust/Aya port in progress (toolchain LLVM mismatch being fixed)
+
+## Day 3
+- bpftrace JSON output (poc/http_json.bt)
+- Python receiver (poc/receiver.py): parses method, path, host
+- Port filter (8080) using the HTTP Host header
+- Pipeline: kernel eBPF -> JSON -> Python -> structured event
