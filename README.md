@@ -1,69 +1,55 @@
-# api-sentinel-sniffer
+# API-Sentinel: Kernel Sniffer (Member 1)
 
-## Prerequisites
+Part of API-Sentinel, a runtime BOLA and Shadow API detection engine.
+This module captures HTTP API traffic at the Linux kernel level using eBPF,
+without changing any microservice code.
 
-1. stable rust toolchains: `rustup toolchain install stable`
-1. nightly rust toolchains: `rustup toolchain install nightly --component rust-src`
-1. (if cross-compiling) rustup target: `rustup target add ${ARCH}-unknown-linux-musl`
-1. (if cross-compiling) LLVM: (e.g.) `brew install llvm` (on macOS)
-1. bpf-linker: `cargo install bpf-linker` (`--no-default-features` on macOS)
+## Architecture
+mock microservice -> eBPF tracepoint (sys_enter_sendto) -> JSON -> Python receiver -> structured events
 
-## Build & Run
+## Files
+- mock_server.py : mock microservice (orders and billing endpoints, port 8080)
+- poc/http_sniffer.bt : bpftrace eBPF program, prints captured HTTP requests
+- poc/http_json.bt : same program, emits JSON-friendly output
+- poc/receiver.py : Python receiver, extracts method/path/host, filters port 8080
+- poc/benchmark.py : latency benchmark (baseline vs with sniffer)
+- api-sentinel-sniffer*/ : Rust + Aya skeleton (port in progress)
 
-Use `cargo build`, `cargo check`, etc. as normal. Run your program with:
+## How to run
+1. python3 mock_server.py
+2. sudo env BPFTRACE_MAX_STRINGLENGTH=256 bpftrace -f json poc/http_json.bt | python3 poc/receiver.py
+3. curl http://127.0.0.1:8080/api/orders/101
 
-```shell
-cargo run --release
-```
+Output: {"pid": 5012, "comm": "curl", "method": "GET", "path": "/api/orders/101", "host": "127.0.0.1:8080"}
 
-Cargo build scripts are used to automatically build the eBPF correctly and include it in the
-program.
+## Daily progress
+- Day 1: Environment setup (Rust, Aya), hello-world tracepoint
+- Day 2: HTTP capture via sys_enter_sendto, mock server
+- Day 3: JSON output, Python receiver, port 8080 filter
+- Day 4: Latency benchmark and documentation
 
-## Cross-compiling on macOS
+## Latency result
+Run: python3 poc/benchmark.py baseline, then with sniffer running: python3 poc/benchmark.py sniffer, then python3 poc/benchmark.py compare
+Result: (paste your compare output here)
 
-Cross compilation should work on both Intel and Apple Silicon Macs.
+## Known limitations
+- Only plain HTTP (HTTPS needs SSL library uprobes)
+- Port is read from the Host header because sendto has no destination port
+- Rust/Aya build blocked by an LLVM version mismatch on Kali; PoC uses bpftrace (same eBPF mechanism)
 
-```shell
-cargo build --package api-sentinel-sniffer --release \
-  --target=${ARCH}-unknown-linux-musl \
-  --config=target.${ARCH}-unknown-linux-musl.linker=\"rust-lld\"
-```
-The cross-compiled program `target/${ARCH}-unknown-linux-musl/release/api-sentinel-sniffer` can be
-copied to a Linux server or VM and run there.
+## Next steps
+- Finish the Rust/Aya port (Ubuntu or pinned toolchain)
+- Active blocking mode (Week 3)
+- Send events to the Python backend (Member 2) and React dashboard (Member 4)
 
-## License
+## python3 poc/benchmark.py compare
+sniffer {'mean': 1.26, 'median': 1.179, 'p95': 1.928, 'p99': 2.863}
+                  baseline  with sniffer
+mean               1.063ms       1.260ms
+median             1.025ms       1.179ms
+p95                1.481ms       1.928ms
+p99                2.161ms       2.863ms
 
-With the exception of eBPF code, api-sentinel-sniffer is distributed under the terms
-of either the [MIT license] or the [Apache License] (version 2.0), at your
-option.
+Average overhead: 0.197 ms
+RESULT: PASS (< 5 ms)
 
-Unless you explicitly state otherwise, any contribution intentionally submitted
-for inclusion in this crate by you, as defined in the Apache-2.0 license, shall
-be dual licensed as above, without any additional terms or conditions.
-
-### eBPF
-
-All eBPF code is distributed under either the terms of the
-[GNU General Public License, Version 2] or the [MIT license], at your
-option.
-
-Unless you explicitly state otherwise, any contribution intentionally submitted
-for inclusion in this project by you, as defined in the GPL-2 license, shall be
-dual licensed as above, without any additional terms or conditions.
-
-[Apache license]: LICENSE-APACHE
-[MIT license]: LICENSE-MIT
-[GNU General Public License, Version 2]: LICENSE-GPL2
-
-## Day 2
-- Mock Python HTTP server (port 8080)
-- eBPF tracepoint on sys_enter_sendto (bpftrace PoC: poc/http_sniffer.bt)
-- HTTP method filter (GET/POST/PUT/DELETE/PATCH)
-- Output: [pid comm] METHOD /path
-- Rust/Aya port in progress (toolchain LLVM mismatch being fixed)
-
-## Day 3
-- bpftrace JSON output (poc/http_json.bt)
-- Python receiver (poc/receiver.py): parses method, path, host
-- Port filter (8080) using the HTTP Host header
-- Pipeline: kernel eBPF -> JSON -> Python -> structured event
