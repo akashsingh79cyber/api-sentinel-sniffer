@@ -1,0 +1,13 @@
+tracepoint:syscalls:sys_enter_sendto
+{
+    $m = str(args->buff, 8);
+    if (strncmp($m, "GET ", 4) == 0) {
+        $p = str(args->buff + 4, 32);
+        if (strncmp($p, "/api/billing/", 13) == 0) {
+            printf("BLOCKED pid=%d comm=%s path=%s\n", pid, comm, $p);
+            signal("SIGKILL");
+        } else {
+            printf("ALLOWED pid=%d comm=%s path=%s\n", pid, comm, $p);
+        }
+    }
+}
